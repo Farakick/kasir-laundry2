@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Struk Arie Loundry</title>
+
+    <style>
+        * { box-sizing: border-box; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --danger: #e74c3c; --success: #2ecc71; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; overflow-x: hidden; }
+        
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 0.9em; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        
+        #inputNote { width: 100%; padding: 12px; border: 1.5px solid #ccc; border-radius: 8px; font-size: 16px; min-height: 80px; resize: vertical; }
+        #box-manual { display: none; margin-top: 5px; }
+        
+        .row { display: flex; gap: 10px; width: 100%; }
+        .col { flex: 1; min-width: 0; }
+        .col input { width: 100%; }
+
+        .btn-add { background-color: var(--success); color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .cart-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; }
+        .cart-table th { text-align: left; border-bottom: 2px solid #eee; padding: 5px; color: #888; }
+        .cart-table td { border-bottom: 1px solid #eee; padding: 8px 5px; }
+        .btn-del { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
+        .summary-total { display: flex; justify-content: space-between; margin-top: 10px; border-top: 2px solid #ddd; padding-top: 10px; font-weight: bold; font-size: 1.2em; color: var(--primary); }
+
+        .btn-print { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; font-size: 16px; margin-top: 20px; }
+        #statusMsg { text-align: center; font-size: 12px; color: green; display: none; margin-top: 10px; }
+
+        /* --- SETTINGAN PRINT STRUK --- */
+        #printableArea { display: none; }
+        @media print {
+            @page { margin: 0; }
+            .container { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            #printableArea { 
+                display: block !important; margin: 0 auto; width: 58mm; padding: 10px; 
+                font-family: 'Courier New', monospace; font-size: 14px; color: black; font-weight: bold; 
+            }
+            #struk-nama { font-weight: 900; font-size: 20px; text-transform: uppercase; display: inline-block; margin-top: 2px; }
+            .text-center { text-align: center; }
+            .struk-item { margin-bottom: 5px; border-bottom: 1px dashed #000; padding-bottom: 2px; }
+            .flex-between { display: flex; justify-content: space-between; }
+            .bold { font-weight: bold; }
+            .hr-dashed { border-bottom: 1px dashed black; margin: 5px 0; }
+            .note-area { margin-top: 10px; border: 2px solid black; padding: 8px; font-size: 16px; font-weight: 900; line-height: 1.3; word-wrap: break-word; background-color: white; }
+        }
+        
+        /* --- PERBAIKAN KHUSUS HP --- */
+        @media only screen and (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 15px; width: 100%; }
+            h2 { font-size: 20px; margin-bottom: 15px; }
+            input, select, textarea { font-size: 16px; padding: 10px; }
+            .btn-add, .btn-print { padding: 12px; font-size: 16px; }
+            .cart-table { font-size: 0.85em; }
+            .cart-table th, .cart-table td { padding: 5px 2px; }
+            .row { gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🧺 Cetak Struk Arie Loundry</h2>
+
+        <div class="form-group">
+            <label>Nama Pelanggan</label>
+            <input type="text" id="nama" placeholder="Nama Pelanggan...">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+        <div style="background: #f0f8ff; padding: 15px; border-radius: 8px;">
+            <div class="form-group">
+                <label>Pilih Layanan</label>
+                <select id="inputLayanan" onchange="cekLayanan()">
+                    <option value="Cuci Kering / Basah (Kg)">Cuci Kering / Basah (Kg)</option>
+                    <option value="Setrika">Setrika Saja (Kg)</option>
+                    <option value="Bed Cover">Bed Cover (Pcs)</option>
+                    <option value="Sprei">Sprei (Pcs)</option>
+                    <option value="Selimut">Selimut (Pcs)</option>
+                    <option value="Permadani">Permadani (Pcs)</option>
+                    <option value="Jaket">Jaket (Pcs)</option>
+                    <option value="Boneka">Boneka (Pcs)</option>
+                    <option value="Lainnya">Lainnya (Tulis Sendiri) ✏️</option>
+                </select>
+
+                <div id="box-manual">
+                    <input type="text" id="nama-manual" placeholder="Tulis nama barang disini...">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <label>Qty / Berat</label>
+                    <input type="number" id="inputQty" value="1">
+                </div>
+                <div class="col">
+                    <label>Harga Satuan</label>
+                    <input type="number" id="inputHarga" value="5000">
+                </div>
+            </div>
+            
+            <button class="btn-add" onclick="tambahItem()">+ Tambah ke Daftar</button>
+        </div>
+
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Layanan</th>
+                    <th style="text-align:center;">Qty</th>
+                    <th style="text-align:right;">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="cartBody"></tbody>
+        </table>
+
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span id="txtSubtotal">Rp 0</span>
+            </div>
+            <div class="summary-row" style="align-items: center;">
+                <span>Deposit (DP):</span>
+                <input type="number" id="inputDeposit" placeholder="0" oninput="hitungTotalAkhir()" style="width: 100px; padding: 5px; text-align: right; border: 1px solid #ddd;">
+            </div>
+            <div class="summary-row" style="align-items: center;">
+                <span>Utang/Kurang:</span>
+                <input type="number" id="inputUtang" placeholder="0" oninput="hitungTotalAkhir()" style="width: 100px; padding: 5px; text-align: right; border: 1px solid #ddd; color: #e74c3c;">
+            </div>
+            <div class="summary-total">
+                <span>Sisa Bayar:</span>
+                <span id="txtTotalAkhir">Rp 0</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Catatan / Keterangan (Opsional)</label>
+            <textarea id="inputNote" rows="3" placeholder="Contoh: Jangan disetrika licin, Luntur, dll..."></textarea>
+        </div>
+
+        <button class="btn-print" id="btnCetak" onclick="prosesTransaksi()">🖨️ Cetak Struk & Simpan</button>
+        <p id="statusMsg">✅ Data tersimpan!</p>
+    </div>
+
+    <div id="printableArea">
+        <div class="text-center">
+            <img src="image.png" alt="Logo Arie Loundry" style="width: 120px; height: auto; margin-bottom: 5px;">
+            <h3 style="margin:0;">Arie Loundry</h3>
+            <p style="margin:2px 0;">Graha Surya Indah BLK J.05<br>WA: 0877-7350-8368</p>
+            <div class="hr-dashed"></div>
+        </div>
+        
+        <div style="font-size: 11px; margin-bottom: 5px;">
+            <div id="struk-date"></div>
+            <div style="margin-top:3px;">Plg: <span id="struk-nama"></span></div>
+        </div>
+
+        <div class="hr-dashed"></div>
+        <div id="struk-items-container"></div>
+        <div class="hr-dashed"></div>
+
+        <div class="flex-between"><span>Subtotal:</span><span id="struk-subtotal"></span></div>
+        <div class="flex-between" id="row-dp-struk" style="display:none;"><span>Deposit:</span><span id="struk-dp"></span></div>
+        <div class="flex-between" id="row-utang-struk" style="display:none;"><span>Utang/Kurang:</span><span id="struk-utang"></span></div>
+        <div class="flex-between bold" style="margin-top: 5px; font-size: 16px; border-top: 1px dashed black; padding-top: 5px;"><span>TOTAL:</span><span id="struk-grand-total"></span></div>
+
+        <div id="struk-qris-container" style="display:none; text-align: center; margin-top: 15px; border-top: 1px dashed black; padding-top: 10px;">
+            <div style="font-size: 13px; margin-bottom: 5px;"><b>Scan QRIS untuk Bayar</b></div>
+            <img id="qris-image" src="" alt="QRIS" style="width: 150px; height: 150px; margin: 0 auto; display: block;">
+        </div>
+
+        <div id="struk-note-area" style="display:none;" class="note-area">
+            <div style="text-decoration: underline; margin-bottom: 3px;">CATATAN PENTING:</div>
+            <span id="struk-note-text"></span>
+        </div>
+
+        <div class="text-center" style="margin-top:15px; border-top: 1px dashed black; padding-top: 5px;">
+            <p style="margin:0;">Terima Kasih!</p>
+        </div>
+        <br><br><br>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwt-ySg3pW9CWH4cqFcp83CVVOf4oEDo8MPOI-o6SqpfWO6aN__uKkz3L2VEz1U6upc0Q/exec'; 
+
+        // --- KONFIGURASI QRIS ---
+        const QRIS_MASTER = "00020101021126570011ID.DANA.WWW011893600915300102754502090010275450303UMI51440014ID.CO.QRIS.WWW0215ID10264899014900303UMI5204721053033605802ID5912Arie Loundry6015Kabupaten Tange610515710630426D7";
+
+        function hitungCRC(teks) {
+            let crc = 0xFFFF;
+            for (let i = 0; i < teks.length; i++) {
+                crc ^= teks.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) !== 0) {
+                        crc = (crc << 1) ^ 0x1021;
+                    } else {
+                        crc = crc << 1;
+                    }
+                }
+            }
+            return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        function buatQRISDinamis(nominal) {
+            let qrisBase = QRIS_MASTER.slice(0, -8);
+            qrisBase = qrisBase.replace("010211", "010212");
+            if (nominal > 0) {
+                let nominalStr = nominal.toString();
+                let panjangNominal = nominalStr.length.toString().padStart(2, '0');
+                qrisBase += "54" + panjangNominal + nominalStr;
+            }
+            qrisBase += "6304";
+            let crcBaru = hitungCRC(qrisBase);
+            return qrisBase + crcBaru;
+        }
+        // --- END KONFIGURASI QRIS ---
+
+        let keranjang = [];
+
+        function formatRupiah(n) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+        }
+
+        function cekLayanan() {
+            const layanan = document.getElementById('inputLayanan').value;
+            const hargaEl = document.getElementById('inputHarga');
+            const boxManual = document.getElementById('box-manual');
+
+            if(layanan === 'Lainnya') {
+                boxManual.style.display = 'block';
+                document.getElementById('nama-manual').focus();
+                hargaEl.value = 0;
+            } else {
+                boxManual.style.display = 'none';
+                if(layanan.includes('Cuci')) hargaEl.value = 5000;
+                else if(layanan.includes('Setrika')) hargaEl.value = 3000;
+                else if(layanan === 'Bed Cover') hargaEl.value = 15000;
+                else if(layanan === 'Sprei') hargaEl.value = 10000;
+                else if(layanan === 'Selimut') hargaEl.value = 6000;
+                else if(layanan === 'Permadani') hargaEl.value = 25000;
+                else if(layanan === 'Jaket') hargaEl.value = 5000;
+                else if(layanan === 'Boneka') hargaEl.value = 10000;
+                else hargaEl.value = 0;
+            }
+        }
+
+        function tambahItem() {
+            let namaLayanan = document.getElementById('inputLayanan').value;
+            const qty = parseFloat(document.getElementById('inputQty').value) || 0;
+            const hargaSatuan = parseFloat(document.getElementById('inputHarga').value) || 0;
+            let subtotal = 0;
+
+            if (namaLayanan === 'Lainnya') {
+                namaLayanan = document.getElementById('nama-manual').value;
+                if(namaLayanan.trim() === "") { alert("Isi nama barang!"); return; }
+            }
+
+            if(qty <= 0 || hargaSatuan <= 0) { alert("Isi jumlah dan harga!"); return; }
+
+            const beratBulat = Math.floor(qty); 
+            const sisaBerat = qty - beratBulat; 
+
+            const isCuci = namaLayanan.toLowerCase().includes("cuci");
+            const isSetrika = namaLayanan.toLowerCase().includes("setrika");
+
+            if (sisaBerat > 0 && (isCuci || isSetrika)) {
+                let hargaSisa = 0;
+                if (isCuci) hargaSisa = 3000; 
+                else if (isSetrika) hargaSisa = 2000; 
+                subtotal = (beratBulat * hargaSatuan) + hargaSisa;
+            } else {
+                subtotal = qty * hargaSatuan;
+            }
+
+            keranjang.push({ layanan: namaLayanan, qty: qty, harga: hargaSatuan, subtotal: subtotal });
+            renderKeranjang();
+            document.getElementById('inputQty').value = 1;
+        }
+
+        function renderKeranjang() {
+            const tbody = document.getElementById('cartBody');
+            tbody.innerHTML = '';
+            keranjang.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.layanan}</td>
+                        <td style="text-align:center;">${item.qty}</td>
+                        <td style="text-align:right;">${formatRupiah(item.subtotal)}</td>
+                        <td style="text-align:center;"><button class="btn-del" onclick="hapusItem(${index})">X</button></td>
+                    </tr>`;
+            });
+            hitungTotalAkhir();
+        }
+
+        function hapusItem(index) {
+            keranjang.splice(index, 1);
+            renderKeranjang();
+        }
+
+        function hitungTotalAkhir() {
+            let totalBelanja = keranjang.reduce((sum, item) => sum + item.subtotal, 0);
+            let deposit = parseFloat(document.getElementById('inputDeposit').value) || 0;
+            let utang = parseFloat(document.getElementById('inputUtang').value) || 0;
+            let totalAkhir = (totalBelanja - deposit) + utang;
+
+            document.getElementById('txtSubtotal').innerText = formatRupiah(totalBelanja);
+            document.getElementById('txtTotalAkhir').innerText = formatRupiah(totalAkhir);
+        }
+
+        function prosesTransaksi() {
+            const nama = document.getElementById('nama').value;
+            const catatan = document.getElementById('inputNote').value;
+            
+            if(keranjang.length === 0) { alert("Keranjang kosong!"); return; }
+
+            const containerStruk = document.getElementById('struk-items-container');
+            containerStruk.innerHTML = ''; 
+            let totalBelanja = 0;
+            let listLayanan = [];
+
+            keranjang.forEach(item => {
+                totalBelanja += item.subtotal;
+                containerStruk.innerHTML += `
+                    <div class="struk-item">
+                        <div class="bold">${item.layanan}</div>
+                        <div class="flex-between">
+                            <span>${item.qty} x ${formatRupiah(item.harga).replace('Rp', '')}</span>
+                            <span>${formatRupiah(item.subtotal)}</span>
+                        </div>
+                    </div>`;
+                listLayanan.push(`${item.layanan} (${item.qty})`);
+            });
+
+            const deposit = parseFloat(document.getElementById('inputDeposit').value) || 0;
+            const utang = parseFloat(document.getElementById('inputUtang').value) || 0;
+            const sisa = (totalBelanja - deposit) + utang;
+
+            document.getElementById('struk-date').innerText = new Date().toLocaleString();
+            document.getElementById('struk-nama').innerText = nama || "UMUM";
+            document.getElementById('struk-subtotal').innerText = formatRupiah(totalBelanja);
+            
+            if(deposit > 0) {
+                document.getElementById('row-dp-struk').style.display = 'flex';
+                document.getElementById('struk-dp').innerText = "- " + formatRupiah(deposit);
+            } else {
+                document.getElementById('row-dp-struk').style.display = 'none';
+            }
+
+            if(utang > 0) {
+                document.getElementById('row-utang-struk').style.display = 'flex';
+                document.getElementById('struk-utang').innerText = "+ " + formatRupiah(utang);
+            } else {
+                document.getElementById('row-utang-struk').style.display = 'none';
+            }
+
+            if(catatan.trim() !== "") {
+                document.getElementById('struk-note-area').style.display = 'block';
+                document.getElementById('struk-note-text').innerText = catatan;
+            } else {
+                document.getElementById('struk-note-area').style.display = 'none';
+            }
+
+            document.getElementById('struk-grand-total').innerText = formatRupiah(sisa);
+
+            // === GENERATE QRIS PAKE API (PASTI MUNCUL DI PRINT) ===
+            const qrisContainer = document.getElementById('struk-qris-container');
+            const qrisImg = document.getElementById('qris-image');
+            
+            const dataKirim = {
+                nama: nama || "Umum",
+                layanan: listLayanan.join(", "), 
+                total_qty: keranjang.reduce((sum, i) => sum + i.qty, 0),
+                total_harga: totalBelanja,
+                deposit: deposit,
+                utang: utang,
+                catatan: catatan,
+                sisa_bayar: sisa
+            };
+
+            kirimKeGoogle(dataKirim);
+
+            if (sisa > 0) {
+                qrisContainer.style.display = 'block';
+                let stringQRISBaru = buatQRISDinamis(sisa);
+                
+                // Minta API bikin gambar QR
+                qrisImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stringQRISBaru)}`;
+                
+                // Tunggu gambarnya ke-download sepenuhnya, baru panggil layar Print
+                qrisImg.onload = function() {
+                    setTimeout(() => { window.print(); }, 300);
+                };
+            } else {
+                qrisContainer.style.display = 'none';
+                setTimeout(() => { window.print(); }, 300);
+            }
+        }
+
+        function kirimKeGoogle(dataJson) {
+            const btn = document.getElementById('btnCetak');
+            btn.disabled = true; btn.innerText = "Menyimpan...";
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST", mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dataJson)
+            }).then(() => {
+                btn.disabled = false; btn.innerText = "🖨️ Cetak Struk & Simpan";
+                document.getElementById('statusMsg').style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>
